@@ -13,11 +13,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Claims Structured version of Claims Section, as referenced at
+// // https://tools.ietf.org/html/rfc7519#section-4.1
+// // See examples for how to use this with your own claim types
 type Claims struct {
 	jwt.StandardClaims
 	Identity interface{} `json:"identity"`
 }
 
+// Config auth config
 type Config struct {
 	// 支持签名算法: HS256, HS384, HS512, RS256, RS384 or RS512
 	// Optional, Default HS256.
@@ -76,7 +80,7 @@ type Config struct {
 // Users can get a token by posting a json request to LoginHandler. The token then needs to be passed in
 // the Authentication header. Example: Authorization:Bearer XXX_TOKEN_XXX
 type Auth struct {
-	Config
+	c Config
 
 	signingMethod jwt.SigningMethod
 	encodeKey     interface{}
@@ -108,56 +112,65 @@ var (
 	ErrNoPrivKeyFile = errors.New("private key file unreadable")
 	// ErrInvalidPrivKey indicates that the given private key is invalid
 	ErrInvalidPrivKey = errors.New("private key invalid")
+	// ErrMissingSecretKey indicates Secret key is required
+	ErrMissingSecretKey = errors.New("secret key is required")
+
+	// ErrMissingIdentity indicates Identity is required
+	ErrMissingIdentity = errors.New("identity is required")
 )
 
 // New for check error with Auth
 func New(c Config) (*Auth, error) {
 	var err error
 
-	mw := &Auth{Config: c}
+	mw := &Auth{c: c}
 
-	if mw.TokenLookup == "" {
-		mw.TokenLookup = "header:Authorization"
+	if mw.c.TokenLookup == "" {
+		mw.c.TokenLookup = "header:Authorization"
 	}
-	if mw.TokenHeaderName = strings.TrimSpace(mw.TokenHeaderName); len(mw.TokenHeaderName) == 0 {
-		mw.TokenHeaderName = "Bearer"
-	}
-
-	if mw.Timeout == 0 {
-		mw.Timeout = time.Hour
+	if mw.c.TokenHeaderName = strings.TrimSpace(mw.c.TokenHeaderName); len(mw.c.TokenHeaderName) == 0 {
+		mw.c.TokenHeaderName = "Bearer"
 	}
 
-	if mw.CookieMaxAge == 0 {
-		mw.CookieMaxAge = mw.Timeout
+	if mw.c.Timeout == 0 {
+		mw.c.Timeout = time.Hour
 	}
-	if mw.CookieName == "" {
-		mw.CookieName = "jwt"
+
+	if mw.c.CookieMaxAge == 0 {
+		mw.c.CookieMaxAge = mw.c.Timeout
+	}
+	if mw.c.CookieName == "" {
+		mw.c.CookieName = "jwt"
+	}
+
+	if mw.c.Identity == nil {
+		return nil, ErrMissingIdentity
 	}
 
 	usingPublicKeyAlgo := false
-	switch mw.SigningAlgorithm {
+	switch mw.c.SigningAlgorithm {
 	case "RS256", "RS512", "RS384":
 		usingPublicKeyAlgo = true
-		mw.encodeKey, err = readPrivateKey(mw.PrivKeyFile)
+		mw.encodeKey, err = readPrivateKey(mw.c.PrivKeyFile)
 		if err != nil {
 			return nil, err
 		}
-		mw.decodeKey, err = readPublicKey(mw.PubKeyFile)
+		mw.decodeKey, err = readPublicKey(mw.c.PubKeyFile)
 		if err != nil {
 			return nil, err
 		}
 	case "HS256", "HS512", "HS384":
 	default:
-		mw.SigningAlgorithm = "HS256"
+		mw.c.SigningAlgorithm = "HS256"
 	}
-	mw.signingMethod = jwt.GetSigningMethod(mw.SigningAlgorithm)
+	mw.signingMethod = jwt.GetSigningMethod(mw.c.SigningAlgorithm)
 
 	if !usingPublicKeyAlgo {
-		if mw.Key == nil {
-			return nil, errors.New("secret key is required")
+		if mw.c.Key == nil {
+			return nil, ErrMissingSecretKey
 		}
-		mw.encodeKey = mw.Key
-		mw.decodeKey = mw.Key
+		mw.encodeKey = mw.c.Key
+		mw.decodeKey = mw.c.Key
 	}
 	return mw, nil
 }
@@ -186,8 +199,9 @@ func readPublicKey(pubKeyFile string) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
+// Encode encode identity in to token
 func (sf *Auth) Encode(identity interface{}) (string, time.Time, error) {
-	expire := time.Now().Add(sf.Timeout)
+	expire := time.Now().Add(sf.c.Timeout)
 	claims := Claims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: expire.Unix(),
@@ -203,6 +217,7 @@ func (sf *Auth) Encode(identity interface{}) (string, time.Time, error) {
 	return tokenString, expire, nil
 }
 
+// Decode decode token to identity
 func (sf *Auth) Decode(token string) (interface{}, error) {
 	return sf.CheckTokenExpire(sf.DecodeToken(token))
 }
@@ -223,7 +238,7 @@ func (sf *Auth) RefreshToken(c *gin.Context) (string, time.Time, error) {
 // DecodeToken parse jwt token string
 func (sf *Auth) DecodeToken(token string) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(token,
-		&Claims{Identity: reflect.New(sf.Identity).Interface()},
+		&Claims{Identity: reflect.New(sf.c.Identity).Interface()},
 		func(t *jwt.Token) (interface{}, error) {
 			if sf.signingMethod != t.Method {
 				return nil, ErrInvalidSigningAlgorithm
@@ -233,6 +248,7 @@ func (sf *Auth) DecodeToken(token string) (*jwt.Token, error) {
 	)
 }
 
+// CheckTokenExpire check token expire or not
 func (sf *Auth) CheckTokenExpire(token *jwt.Token, err error) (interface{}, error) {
 	if err != nil {
 		// If we receive an error, and the error is anything other than a single
@@ -250,7 +266,7 @@ func (sf *Auth) CheckTokenExpire(token *jwt.Token, err error) (interface{}, erro
 	if !ok {
 		return nil, ErrInvalidToken
 	}
-	if claims.VerifyExpiresAt(time.Now().Add(-sf.MaxRefresh).Unix(), true) {
+	if claims.VerifyExpiresAt(time.Now().Add(-sf.c.MaxRefresh).Unix(), true) {
 		return claims.Identity, nil
 	}
 	return nil, ErrExpiredToken
@@ -258,23 +274,23 @@ func (sf *Auth) CheckTokenExpire(token *jwt.Token, err error) (interface{}, erro
 
 // SetCookie can be used by clients to set the jwt cookie
 func (sf *Auth) SetCookie(c *gin.Context, tokenString string) {
-	if sf.CookieSameSite != 0 {
-		c.SetSameSite(sf.CookieSameSite)
+	if sf.c.CookieSameSite != 0 {
+		c.SetSameSite(sf.c.CookieSameSite)
 	}
 	c.SetCookie(
-		sf.CookieName, tokenString, int(sf.CookieMaxAge/time.Second),
-		"/", sf.CookieDomain, sf.SecureCookie, sf.CookieHTTPOnly,
+		sf.c.CookieName, tokenString, int(sf.c.CookieMaxAge/time.Second),
+		"/", sf.c.CookieDomain, sf.c.SecureCookie, sf.c.CookieHTTPOnly,
 	)
 }
 
 // RemoveCookie can be used by clients to remove the jwt cookie (if set)
 func (sf *Auth) RemoveCookie(c *gin.Context) {
-	if sf.CookieSameSite != 0 {
-		c.SetSameSite(sf.CookieSameSite)
+	if sf.c.CookieSameSite != 0 {
+		c.SetSameSite(sf.c.CookieSameSite)
 	}
 	c.SetCookie(
-		sf.CookieName, "", -1,
-		"/", sf.CookieDomain, sf.SecureCookie, sf.CookieHTTPOnly,
+		sf.c.CookieName, "", -1,
+		"/", sf.c.CookieDomain, sf.c.SecureCookie, sf.c.CookieHTTPOnly,
 	)
 }
 
@@ -283,7 +299,7 @@ func (sf *Auth) GetToken(c *gin.Context) (string, error) {
 	var token string
 	var err error
 
-	methods := strings.Split(sf.TokenLookup, ",")
+	methods := strings.Split(sf.c.TokenLookup, ",")
 	for _, method := range methods {
 		if len(token) > 0 {
 			break
@@ -292,7 +308,7 @@ func (sf *Auth) GetToken(c *gin.Context) (string, error) {
 		k, v := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
 		switch k {
 		case "header":
-			token, err = jwtFromHeader(c, v, sf.TokenHeaderName)
+			token, err = jwtFromHeader(c, v, sf.c.TokenHeaderName)
 		case "query":
 			token, err = jwtFromQuery(c, v)
 		case "cookie":
