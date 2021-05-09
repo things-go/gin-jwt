@@ -58,20 +58,6 @@ type Config struct {
 	// TokenHeaderName is a string in the header.
 	// Default value is "Bearer"
 	TokenHeaderName string
-
-	// For cookie
-	// Duration that a cookie is valid. Optional, by default equals to Timeout value.
-	CookieMaxAge time.Duration
-	// Allow insecure cookies for development over http
-	SecureCookie bool
-	// Allow cookies to be accessed client side for development
-	CookieHTTPOnly bool
-	// Allow cookie domain change for development
-	CookieDomain string
-	// CookieName allow cookie name change for development
-	CookieName string
-	// CookieSameSite allow use http.SameSite cookie param
-	CookieSameSite http.SameSite
 }
 
 // Auth provides a Json-Web-Token authentication implementation. On failure, a 401 HTTP response
@@ -134,13 +120,6 @@ func New(c Config) (*Auth, error) {
 
 	if mw.c.Timeout == 0 {
 		mw.c.Timeout = time.Hour
-	}
-
-	if mw.c.CookieMaxAge == 0 {
-		mw.c.CookieMaxAge = mw.c.Timeout
-	}
-	if mw.c.CookieName == "" {
-		mw.c.CookieName = "jwt"
 	}
 
 	if mw.c.Identity == nil {
@@ -272,28 +251,6 @@ func (sf *Auth) CheckTokenExpire(token *jwt.Token, err error) (interface{}, erro
 	return nil, ErrExpiredToken
 }
 
-// SetCookie can be used by clients to set the jwt cookie
-func (sf *Auth) SetCookie(c *gin.Context, tokenString string) {
-	if sf.c.CookieSameSite != 0 {
-		c.SetSameSite(sf.c.CookieSameSite)
-	}
-	c.SetCookie(
-		sf.c.CookieName, tokenString, int(sf.c.CookieMaxAge/time.Second),
-		"/", sf.c.CookieDomain, sf.c.SecureCookie, sf.c.CookieHTTPOnly,
-	)
-}
-
-// RemoveCookie can be used by clients to remove the jwt cookie (if set)
-func (sf *Auth) RemoveCookie(c *gin.Context) {
-	if sf.c.CookieSameSite != 0 {
-		c.SetSameSite(sf.c.CookieSameSite)
-	}
-	c.SetCookie(
-		sf.c.CookieName, "", -1,
-		"/", sf.c.CookieDomain, sf.c.SecureCookie, sf.c.CookieHTTPOnly,
-	)
-}
-
 // GetToken 获取token, 从Request中获取,由 TokenLookup 定义
 func (sf *Auth) GetToken(c *gin.Context) (string, error) {
 	var token string
@@ -361,4 +318,42 @@ func jwtFromParam(c *gin.Context, key string) (string, error) {
 		return "", ErrMissingToken
 	}
 	return token, nil
+}
+
+type Cookie struct {
+	// For cookie
+	// Duration that a cookie is valid.
+	CookieMaxAge time.Duration
+	// Allow insecure cookies for development over http
+	SecureCookie bool
+	// Allow cookies to be accessed client side for development
+	CookieHTTPOnly bool
+	// Allow cookie domain change for development
+	CookieDomain string
+	// CookieName allow cookie name change for development
+	CookieName string
+	// CookieSameSite allow use http.SameSite cookie param
+	CookieSameSite http.SameSite
+}
+
+// SetCookie can be used by clients to set the jwt cookie
+func (sf *Cookie) SetCookie(c *gin.Context, tokenString string) {
+	if sf.CookieSameSite != 0 {
+		c.SetSameSite(sf.CookieSameSite)
+	}
+	c.SetCookie(
+		sf.CookieName, tokenString, int(sf.CookieMaxAge/time.Second),
+		"/", sf.CookieDomain, sf.SecureCookie, sf.CookieHTTPOnly,
+	)
+}
+
+// RemoveCookie can be used by clients to remove the jwt cookie (if set)
+func (sf *Cookie) RemoveCookie(c *gin.Context) {
+	if sf.CookieSameSite != 0 {
+		c.SetSameSite(sf.CookieSameSite)
+	}
+	c.SetCookie(
+		sf.CookieName, "", -1,
+		"/", sf.CookieDomain, sf.SecureCookie, sf.CookieHTTPOnly,
+	)
 }
