@@ -78,7 +78,7 @@ func TestMissIdentity(t *testing.T) {
 }
 
 func TestAuth(t *testing.T) {
-	auth, err := New(Config{Key: key, Identity: reflect.TypeOf(Identity{})})
+	auth, err := New(Config{Key: key, Identity: Identity{}})
 	assert.NoError(t, err)
 
 	want := &Identity{1, "username"}
