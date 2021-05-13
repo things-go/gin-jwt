@@ -43,9 +43,9 @@ type Config struct {
 	// Optional, defaults to 0 meaning not refreshable.
 	MaxRefresh time.Duration
 
-	// Identity type for jwt used
+	// Identity type for jwt used, which you want to encode into jwt payload
 	// Required
-	Identity reflect.Type
+	Identity interface{}
 
 	// TokenLookup is a string in the form of "<source>:<name>" that is used
 	// to extract token from the request.
@@ -68,6 +68,7 @@ type Config struct {
 type Auth struct {
 	c Config
 
+	identity      interface{}
 	signingMethod jwt.SigningMethod
 	encodeKey     interface{}
 	decodeKey     interface{}
@@ -125,7 +126,7 @@ func New(c Config) (*Auth, error) {
 	if mw.c.Identity == nil {
 		return nil, ErrMissingIdentity
 	}
-
+	mw.identity = reflect.New(reflect.Indirect(reflect.ValueOf(mw.c.Identity)).Type()).Interface()
 	usingPublicKeyAlgo := false
 	switch mw.c.SigningAlgorithm {
 	case "RS256", "RS512", "RS384":
@@ -217,7 +218,7 @@ func (sf *Auth) RefreshToken(c *gin.Context) (string, time.Time, error) {
 // DecodeToken parse jwt token string
 func (sf *Auth) DecodeToken(token string) (*jwt.Token, error) {
 	return jwt.ParseWithClaims(token,
-		&Claims{Identity: reflect.New(sf.c.Identity).Interface()},
+		&Claims{Identity: sf.identity},
 		func(t *jwt.Token) (interface{}, error) {
 			if sf.signingMethod != t.Method {
 				return nil, ErrInvalidSigningAlgorithm

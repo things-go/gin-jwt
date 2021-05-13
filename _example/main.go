@@ -4,7 +4,6 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
@@ -46,7 +45,7 @@ func main() {
 
 		// TokenHeaderName is a string in the header. Default value is "Bearer"
 		TokenHeaderName: "Bearer",
-		Identity:        reflect.TypeOf(User{}),
+		Identity:        &User{},
 	})
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
@@ -82,11 +81,13 @@ func (sf *Service) Login(c *gin.Context) {
 
 	if (username == "admin" && password == "admin") ||
 		(username == "test" && password == "test") {
-		t, tm, err := sf.auth.Encode(&User{rand.Int63(), username})
+		uid := rand.Int63()
+		t, tm, err := sf.auth.Encode(&User{uid, username})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
+		log.Printf("uid: %d, token: %s", uid, t)
 		c.JSON(http.StatusOK, gin.H{"token": t, "tm": tm})
 		return
 	}
