@@ -1,7 +1,6 @@
 package jwt
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,7 +16,7 @@ var key = []byte("secret key")
 
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
-		Identity: reflect.TypeOf(Identity{}),
+		Identity: Identity{},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrMissingSecretKey, err)
@@ -27,7 +26,7 @@ func TestMissingPrivKey(t *testing.T) {
 	_, err := New(Config{
 		SigningAlgorithm: "RS256",
 		PrivKeyFile:      "nonexisting",
-		Identity:         reflect.TypeOf(Identity{}),
+		Identity:         Identity{},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrNoPrivKeyFile, err)
@@ -38,7 +37,7 @@ func TestMissingPubKey(t *testing.T) {
 		SigningAlgorithm: "RS256",
 		PrivKeyFile:      "testdata/jwtRS256.key",
 		PubKeyFile:       "nonexisting",
-		Identity:         reflect.TypeOf(Identity{}),
+		Identity:         Identity{},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrNoPubKeyFile, err)
@@ -49,7 +48,7 @@ func TestInvalidPrivKey(t *testing.T) {
 		SigningAlgorithm: "RS256",
 		PrivKeyFile:      "testdata/invalidprivkey.key",
 		PubKeyFile:       "testdata/jwtRS256.key.pub",
-		Identity:         reflect.TypeOf(Identity{}),
+		Identity:         Identity{},
 	})
 
 	assert.Error(t, err)
@@ -61,7 +60,7 @@ func TestInvalidPubKey(t *testing.T) {
 		SigningAlgorithm: "RS256",
 		PrivKeyFile:      "testdata/jwtRS256.key",
 		PubKeyFile:       "testdata/invalidpubkey.key",
-		Identity:         reflect.TypeOf(Identity{}),
+		Identity:         Identity{},
 	})
 
 	assert.Error(t, err)
@@ -93,6 +92,30 @@ func TestAuth(t *testing.T) {
 	require.True(t, ok)
 
 	require.Equal(t, want, got)
+}
+
+func BenchmarkHS(b *testing.B) {
+	rs, _ := New(Config{
+		Key:      []byte("key"),
+		Identity: Identity{},
+	})
+
+	for i := 0; i < b.N; i++ {
+		rs.Encode(Identity{})
+	}
+}
+
+func BenchmarkRS(b *testing.B) {
+	rs, _ := New(Config{
+		SigningAlgorithm: "RS256",
+		PrivKeyFile:      "testdata/jwtRS256.key",
+		PubKeyFile:       "testdata/jwtRS256.key.pub",
+		Identity:         Identity{},
+	})
+
+	for i := 0; i < b.N; i++ {
+		rs.Encode(Identity{})
+	}
 }
 
 // const identityKey = "identify"
