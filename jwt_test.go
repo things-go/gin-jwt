@@ -101,7 +101,7 @@ func BenchmarkHS(b *testing.B) {
 	})
 
 	for i := 0; i < b.N; i++ {
-		rs.Encode(Identity{})
+		_, _, _ = rs.Encode(Identity{})
 	}
 }
 
@@ -114,7 +114,7 @@ func BenchmarkRS(b *testing.B) {
 	})
 
 	for i := 0; i < b.N; i++ {
-		rs.Encode(Identity{})
+		_, _, _ = rs.Encode(Identity{})
 	}
 }
 

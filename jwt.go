@@ -321,6 +321,7 @@ func jwtFromParam(c *gin.Context, key string) (string, error) {
 	return token, nil
 }
 
+// Cookie for cookie set jwt token
 type Cookie struct {
 	// For cookie
 	// Duration that a cookie is valid.
