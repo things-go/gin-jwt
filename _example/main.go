@@ -28,7 +28,7 @@ type login struct {
 func main() {
 	// jwt auth
 	auth, err := jwt.New(jwt.Config{
-		Sign: jwt.Sign{
+		SignConfig: jwt.SignConfig{
 			Key:        []byte("secret key"),
 			Timeout:    time.Hour,
 			MaxRefresh: time.Hour,

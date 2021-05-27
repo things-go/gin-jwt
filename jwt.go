@@ -18,8 +18,8 @@ type Claims struct {
 	Identity interface{} `json:"identity"`
 }
 
-// Sign Signature config
-type Sign struct {
+// SignConfig Signature config
+type SignConfig struct {
 	// 支持签名算法: HS256, HS384, HS512, RS256, RS384 or RS512
 	// Optional, Default HS256.
 	SigningAlgorithm string
@@ -56,7 +56,7 @@ type Signature struct {
 }
 
 // NewSignature new signature with Config
-func NewSignature(c Sign) (*Signature, error) {
+func NewSignature(c SignConfig) (*Signature, error) {
 	var err error
 
 	if c.Identity == nil {

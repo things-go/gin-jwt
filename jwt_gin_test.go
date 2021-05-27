@@ -16,7 +16,7 @@ var key = []byte("secret key")
 
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			Identity: Identity{},
 		},
 	})
@@ -26,7 +26,7 @@ func TestMissingKey(t *testing.T) {
 
 func TestMissingPrivKey(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "nonexisting",
 			Identity:         Identity{},
@@ -38,7 +38,7 @@ func TestMissingPrivKey(t *testing.T) {
 
 func TestMissingPubKey(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "nonexisting",
@@ -51,7 +51,7 @@ func TestMissingPubKey(t *testing.T) {
 
 func TestInvalidPrivKey(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/invalidprivkey.key",
 			PubKeyFile:       "testdata/jwtRS256.key.pub",
@@ -65,7 +65,7 @@ func TestInvalidPrivKey(t *testing.T) {
 
 func TestInvalidPubKey(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "testdata/invalidpubkey.key",
@@ -79,7 +79,7 @@ func TestInvalidPubKey(t *testing.T) {
 
 func TestMissIdentity(t *testing.T) {
 	_, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			Key: key,
 		},
 	})
@@ -90,7 +90,7 @@ func TestMissIdentity(t *testing.T) {
 
 func TestAuth(t *testing.T) {
 	auth, err := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			Key: key, Identity: Identity{},
 		},
 	})
@@ -112,7 +112,7 @@ func TestAuth(t *testing.T) {
 
 func BenchmarkHS(b *testing.B) {
 	rs, _ := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			Key:      []byte("key"),
 			Identity: Identity{},
 		},
@@ -125,7 +125,7 @@ func BenchmarkHS(b *testing.B) {
 
 func BenchmarkRS(b *testing.B) {
 	rs, _ := New(Config{
-		Sign: Sign{
+		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "testdata/jwtRS256.key.pub",

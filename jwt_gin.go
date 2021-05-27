@@ -8,7 +8,7 @@ import (
 
 // Config auth config
 type Config struct {
-	Sign
+	SignConfig
 
 	// TokenLookup is a string in the form of "<source>:<name>" that is used
 	// to extract token from the request.
@@ -33,7 +33,7 @@ type Auth struct {
 
 // New for check error with Config
 func New(c Config) (*Auth, error) {
-	sign, err := NewSignature(c.Sign)
+	sign, err := NewSignature(c.SignConfig)
 	if err != nil {
 		return nil, err
 	}
