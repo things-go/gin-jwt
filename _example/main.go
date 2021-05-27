@@ -28,10 +28,14 @@ type login struct {
 func main() {
 	// jwt auth
 	auth, err := jwt.New(jwt.Config{
-		Key:        []byte("secret key"),
-		Timeout:    time.Hour,
-		MaxRefresh: time.Hour,
-		// TokenLookup is a string in the form of "<source>:<name>" that is used
+		Sign: jwt.Sign{
+			Key:        []byte("secret key"),
+			Timeout:    time.Hour,
+			MaxRefresh: time.Hour,
+			Identity:   &User{},
+		},
+
+		// Lookup is a string in the form of "<source>:<name>" that is used
 		// to extract token from the request.
 		// Optional. Default value "header:Authorization".
 		// Possible values:
@@ -40,12 +44,11 @@ func main() {
 		// - "cookie:<name>"
 		// - "param:<name>"
 		TokenLookup: "header: Authorization, query: token, cookie: jwt",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
+		// Lookup: "query:token",
+		// Lookup: "cookie:token",
 
 		// TokenHeaderName is a string in the header. Default value is "Bearer"
 		TokenHeaderName: "Bearer",
-		Identity:        &User{},
 	})
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())

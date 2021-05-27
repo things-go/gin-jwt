@@ -16,7 +16,9 @@ var key = []byte("secret key")
 
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
-		Identity: Identity{},
+		Sign: Sign{
+			Identity: Identity{},
+		},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrMissingSecretKey, err)
@@ -24,9 +26,11 @@ func TestMissingKey(t *testing.T) {
 
 func TestMissingPrivKey(t *testing.T) {
 	_, err := New(Config{
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "nonexisting",
-		Identity:         Identity{},
+		Sign: Sign{
+			SigningAlgorithm: "RS256",
+			PrivKeyFile:      "nonexisting",
+			Identity:         Identity{},
+		},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrNoPrivKeyFile, err)
@@ -34,10 +38,12 @@ func TestMissingPrivKey(t *testing.T) {
 
 func TestMissingPubKey(t *testing.T) {
 	_, err := New(Config{
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "nonexisting",
-		Identity:         Identity{},
+		Sign: Sign{
+			SigningAlgorithm: "RS256",
+			PrivKeyFile:      "testdata/jwtRS256.key",
+			PubKeyFile:       "nonexisting",
+			Identity:         Identity{},
+		},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrNoPubKeyFile, err)
@@ -45,10 +51,12 @@ func TestMissingPubKey(t *testing.T) {
 
 func TestInvalidPrivKey(t *testing.T) {
 	_, err := New(Config{
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/invalidprivkey.key",
-		PubKeyFile:       "testdata/jwtRS256.key.pub",
-		Identity:         Identity{},
+		Sign: Sign{
+			SigningAlgorithm: "RS256",
+			PrivKeyFile:      "testdata/invalidprivkey.key",
+			PubKeyFile:       "testdata/jwtRS256.key.pub",
+			Identity:         Identity{},
+		},
 	})
 
 	assert.Error(t, err)
@@ -57,10 +65,12 @@ func TestInvalidPrivKey(t *testing.T) {
 
 func TestInvalidPubKey(t *testing.T) {
 	_, err := New(Config{
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "testdata/invalidpubkey.key",
-		Identity:         Identity{},
+		Sign: Sign{
+			SigningAlgorithm: "RS256",
+			PrivKeyFile:      "testdata/jwtRS256.key",
+			PubKeyFile:       "testdata/invalidpubkey.key",
+			Identity:         Identity{},
+		},
 	})
 
 	assert.Error(t, err)
@@ -69,7 +79,9 @@ func TestInvalidPubKey(t *testing.T) {
 
 func TestMissIdentity(t *testing.T) {
 	_, err := New(Config{
-		Key: key,
+		Sign: Sign{
+			Key: key,
+		},
 	})
 
 	assert.Error(t, err)
@@ -77,7 +89,11 @@ func TestMissIdentity(t *testing.T) {
 }
 
 func TestAuth(t *testing.T) {
-	auth, err := New(Config{Key: key, Identity: Identity{}})
+	auth, err := New(Config{
+		Sign: Sign{
+			Key: key, Identity: Identity{},
+		},
+	})
 	assert.NoError(t, err)
 
 	want := &Identity{1, "username"}
@@ -96,8 +112,10 @@ func TestAuth(t *testing.T) {
 
 func BenchmarkHS(b *testing.B) {
 	rs, _ := New(Config{
-		Key:      []byte("key"),
-		Identity: Identity{},
+		Sign: Sign{
+			Key:      []byte("key"),
+			Identity: Identity{},
+		},
 	})
 
 	for i := 0; i < b.N; i++ {
@@ -107,10 +125,12 @@ func BenchmarkHS(b *testing.B) {
 
 func BenchmarkRS(b *testing.B) {
 	rs, _ := New(Config{
-		SigningAlgorithm: "RS256",
-		PrivKeyFile:      "testdata/jwtRS256.key",
-		PubKeyFile:       "testdata/jwtRS256.key.pub",
-		Identity:         Identity{},
+		Sign: Sign{
+			SigningAlgorithm: "RS256",
+			PrivKeyFile:      "testdata/jwtRS256.key",
+			PubKeyFile:       "testdata/jwtRS256.key.pub",
+			Identity:         Identity{},
+		},
 	})
 
 	for i := 0; i < b.N; i++ {
