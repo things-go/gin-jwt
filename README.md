@@ -2,7 +2,6 @@
 
 [![GoDoc](https://godoc.org/github.com/things-go/gin-jwt?status.svg)](https://godoc.org/github.com/things-go/gin-jwt)
 [![Go.Dev reference](https://img.shields.io/badge/go.dev-reference-blue?logo=go&logoColor=white)](https://pkg.go.dev/github.com/things-go/gin-jwt?tab=doc)
-[![Build Status](https://travis-ci.com/things-go/gin-jwt.svg)](https://travis-ci.com/things-go/gin-jwt)
 [![codecov](https://codecov.io/gh/things-go/gin-jwt/branch/master/graph/badge.svg)](https://codecov.io/gh/things-go/gin-jwt)
 ![Action Status](https://github.com/things-go/gin-jwt/workflows/Go/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/things-go/gin-jwt)](https://goreportcard.com/report/github.com/things-go/gin-jwt)
