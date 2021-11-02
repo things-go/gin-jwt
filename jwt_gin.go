@@ -19,7 +19,7 @@ type Config struct {
 	// - "cookie:<name>"
 	TokenLookup string
 	// TokenHeaderName is a string in the header.
-	// Default value is "Bearer"
+	// Possible value is "Bearer"
 	TokenHeaderName string
 }
 

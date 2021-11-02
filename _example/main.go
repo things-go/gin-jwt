@@ -47,7 +47,7 @@ func main() {
 		// Lookup: "query:token",
 		// Lookup: "cookie:token",
 
-		// TokenHeaderName is a string in the header. Default value is "Bearer"
+		// TokenHeaderName is a string in the header. Possible value is "Bearer"
 		TokenHeaderName: "Bearer",
 	})
 	if err != nil {

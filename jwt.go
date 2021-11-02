@@ -7,14 +7,14 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v4"
 )
 
 // Claims Structured version of Claims Section, as referenced at
 // https://tools.ietf.org/html/rfc7519#section-4.1
 // See examples for how to use this with your own claim types
 type Claims struct {
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 	Identity interface{} `json:"identity"`
 }
 
@@ -124,7 +124,7 @@ func readPublicKey(pubKeyFile string) (*rsa.PublicKey, error) {
 	return key, nil
 }
 
-// Encode encode identity in to token
+// Encode identity in to token
 // if timeouts not give ,use default timeout
 func (sf *Signature) Encode(identity interface{}, timeouts ...time.Duration) (string, time.Time, error) {
 	timeout := sf.timeout
@@ -133,9 +133,9 @@ func (sf *Signature) Encode(identity interface{}, timeouts ...time.Duration) (st
 	}
 	expire := time.Now().Add(timeout)
 	claims := Claims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: expire.Unix(),
-			IssuedAt:  time.Now().Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(expire),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 		Identity: identity,
 	}
@@ -183,7 +183,7 @@ func (sf *Signature) CheckTokenExpire(token *jwt.Token, err error) (interface{},
 	if !ok {
 		return nil, ErrInvalidToken
 	}
-	if claims.VerifyExpiresAt(time.Now().Add(-sf.maxRefresh).Unix(), true) {
+	if claims.VerifyExpiresAt(time.Now().Add(-sf.maxRefresh), true) {
 		return claims.Identity, nil
 	}
 	return nil, ErrExpiredToken

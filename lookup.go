@@ -30,15 +30,12 @@ type Lookup struct {
 // - "query:<name>"
 // - "cookie:<name>"
 // headerName is a string in the header.
-// Default value is "Bearer"
+// Possible value is "Bearer"
 func NewLookup(lookup, headerName string) *Lookup {
 	if lookup == "" {
 		lookup = "header:Authorization"
 	}
-	if headerName = strings.TrimSpace(headerName); len(headerName) == 0 {
-		headerName = "Bearer"
-	}
-
+	headerName = strings.TrimSpace(headerName)
 	methods := strings.Split(lookup, ",")
 	lookups := make([]pair, 0, len(methods))
 	for _, method := range methods {
@@ -85,11 +82,14 @@ func (sf *Lookup) GetToken(c *gin.Context) (string, error) {
 
 // FromHeader get token from header
 // key is header key, like "Authorization"
-// headerName is a string in the header, like "Bearer"
+// headerName is a string in the header, like "Bearer", if it is empty, it will return value.
 func FromHeader(c *gin.Context, key, headerName string) (string, error) {
 	authHeader := c.Request.Header.Get(key)
 	if authHeader == "" {
 		return "", ErrMissingToken
+	}
+	if headerName == "" {
+		return authHeader, nil
 	}
 
 	parts := strings.SplitN(authHeader, " ", 2)
