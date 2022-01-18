@@ -91,6 +91,8 @@ func TestAuth(t *testing.T) {
 	token, err := auth.NewWithClaims(Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(auth.GetTimeout())),
+			NotBefore: jwt.NewNumericDate(time.Now().Add(auth.GetMaxRefresh())), // just for test
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 		Identity: *want,
 	})

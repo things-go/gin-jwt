@@ -89,14 +89,14 @@ func FromHeader(c *gin.Context, key, headerName string) (string, error) {
 		return "", ErrMissingToken
 	}
 	if headerName == "" {
-		return authHeader, nil
+		return strings.TrimSpace(authHeader), nil
 	}
 
 	parts := strings.SplitN(authHeader, " ", 2)
 	if !(len(parts) == 2 && parts[0] == headerName) {
 		return "", ErrInvalidAuthHeader
 	}
-	return parts[1], nil
+	return strings.TrimSpace(parts[1]), nil
 }
 
 // FromQuery get token from query
@@ -106,7 +106,7 @@ func FromQuery(c *gin.Context, key string) (string, error) {
 	if token == "" {
 		return "", ErrMissingToken
 	}
-	return token, nil
+	return strings.TrimSpace(token), nil
 }
 
 // FromCookie get token from Cookie
@@ -116,7 +116,7 @@ func FromCookie(c *gin.Context, key string) (string, error) {
 	if cookie == "" {
 		return "", ErrMissingToken
 	}
-	return cookie, nil
+	return strings.TrimSpace(cookie), nil
 }
 
 // FromParam get token from param
@@ -126,5 +126,5 @@ func FromParam(c *gin.Context, key string) (string, error) {
 	if token == "" {
 		return "", ErrMissingToken
 	}
-	return token, nil
+	return strings.TrimSpace(token), nil
 }
