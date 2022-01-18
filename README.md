@@ -52,13 +52,13 @@ import (
 	"log"
 	"math/rand"
 	"net/http"
-	"reflect"
 	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 
-	jwt "github.com/things-go/gin-jwt"
+	ginjwt "github.com/things-go/gin-jwt"
 )
 
 const identityKey = "identify"
@@ -74,13 +74,21 @@ type login struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
+type Claims struct {
+	jwt.RegisteredClaims
+	Identity User `json:"identity"`
+}
+
 func main() {
 	// jwt auth
-	auth, err := jwt.New(jwt.Config{
-		Key:        []byte("secret key"),
-		Timeout:    time.Hour,
-		MaxRefresh: time.Hour,
-		// TokenLookup is a string in the form of "<source>:<name>" that is used
+	auth, err := ginjwt.New(ginjwt.Config{
+		SignConfig: ginjwt.SignConfig{
+			Key:        []byte("secret key"),
+			Timeout:    time.Hour,
+			MaxRefresh: time.Hour,
+		},
+
+		// Lookup is a string in the form of "<source>:<name>" that is used
 		// to extract token from the request.
 		// Optional. Default value "header:Authorization".
 		// Possible values:
@@ -89,12 +97,11 @@ func main() {
 		// - "cookie:<name>"
 		// - "param:<name>"
 		TokenLookup: "header: Authorization, query: token, cookie: jwt",
-		// TokenLookup: "query:token",
-		// TokenLookup: "cookie:token",
+		// Lookup: "query:token",
+		// Lookup: "cookie:token",
 
-		// TokenHeaderName is a string in the header. Default value is "Bearer"
+		// TokenHeaderName is a string in the header. Possible value is "Bearer"
 		TokenHeaderName: "Bearer",
-		Identity:        reflect.TypeOf(User{}),
 	})
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
@@ -116,7 +123,7 @@ func main() {
 }
 
 type Service struct {
-	auth *jwt.Auth
+	auth *ginjwt.Auth
 }
 
 func (sf *Service) Login(c *gin.Context) {
@@ -130,12 +137,21 @@ func (sf *Service) Login(c *gin.Context) {
 
 	if (username == "admin" && password == "admin") ||
 		(username == "test" && password == "test") {
-		t, tm, err := sf.auth.Encode(&User{rand.Int63(), username})
+		uid := rand.Int63()
+
+		expiredAt := time.Now().Add(sf.auth.GetTimeout())
+		t, err := sf.auth.NewWithClaims(Claims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(expiredAt),
+			},
+			Identity: User{uid, username},
+		})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
-		c.JSON(http.StatusOK, gin.H{"token": t, "tm": tm})
+		log.Printf("uid: %d, token: %s", uid, t)
+		c.JSON(http.StatusOK, gin.H{"token": t, "tm": expiredAt})
 		return
 	}
 	c.JSON(http.StatusBadRequest, gin.H{"msg": "账号或密码错"})
@@ -158,13 +174,13 @@ func (sf *Service) CheckAuth(excludePrefixes ...string) gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 				return
 			}
-			identity, err := sf.auth.Decode(tk)
+			v, err := sf.auth.ParseWithClaims(tk, &Claims{})
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 				return
 			}
-			u := identity.(*User)
-			c.Set(identityKey, u)
+			u := v.Claims.(*Claims)
+			c.Set(identityKey, &u.Identity)
 		}
 		c.Next()
 	}
