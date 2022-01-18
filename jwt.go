@@ -2,23 +2,11 @@ package jwt
 
 import (
 	"crypto/rsa"
-	"errors"
 	"io/ioutil"
-	"reflect"
 	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
-
-// Claims Structured version of Claims Section, as referenced at
-// https://tools.ietf.org/html/rfc7519#section-4.1
-// See examples for how to use this with your own claim types
-//
-// Deprecated: not support, it will remove v1.0.0
-type Claims struct {
-	jwt.RegisteredClaims
-	Identity interface{} `json:"identity"`
-}
 
 // SignConfig Signature config
 type SignConfig struct {
@@ -41,12 +29,6 @@ type SignConfig struct {
 	// This means that the maximum validity timespan for a token is TokenTime + MaxRefresh.
 	// Optional, defaults to 0 meaning not refreshable.
 	MaxRefresh time.Duration
-
-	// Identity type for jwt used, which you want to encode into jwt payload
-	// Required
-	//
-	// Deprecated: not support, it will remove v1.0.0
-	Identity interface{}
 }
 
 // Signature provides a Json-Web-Token authentication implementation.
@@ -56,16 +38,12 @@ type Signature struct {
 	signingMethod jwt.SigningMethod
 	encodeKey     interface{}
 	decodeKey     interface{}
-	identity      interface{}
 }
 
 // NewSignature new signature with Config
 func NewSignature(c SignConfig) (*Signature, error) {
 	var err error
 
-	if c.Identity == nil {
-		c.Identity = struct{}{}
-	}
 	if c.Timeout == 0 {
 		c.Timeout = time.Hour
 	}
@@ -73,7 +51,6 @@ func NewSignature(c SignConfig) (*Signature, error) {
 	mw := &Signature{
 		timeout:    c.Timeout,
 		maxRefresh: c.MaxRefresh,
-		identity:   reflect.New(reflect.Indirect(reflect.ValueOf(c.Identity)).Type()).Interface(),
 	}
 
 	usingPublicKeyAlgo := false
@@ -155,72 +132,4 @@ func (sf *Signature) ParseWithClaims(tokenString string, claims jwt.Claims) (*jw
 			return sf.decodeKey, nil
 		},
 	)
-}
-
-/******************** with identity *************************/
-
-// Encode identity in to token
-// if timeouts not give ,use default timeout
-//
-// Deprecated: use NewWithClaims instead, it will remove v1.0.0
-func (sf *Signature) Encode(identity interface{}, timeouts ...time.Duration) (string, time.Time, error) {
-	timeout := sf.timeout
-	if len(timeouts) > 0 && timeouts[0] > 0 {
-		timeout = timeouts[0]
-	}
-
-	expire := time.Now().Add(timeout)
-	claims := Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expire),
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-		},
-		Identity: identity,
-	}
-	// Create the token
-	tokenString, err := sf.NewWithClaims(claims)
-	if err != nil {
-		return "", expire, errors.New("create JWT Token failed")
-	}
-	return tokenString, expire, nil
-}
-
-// Decode token to identity
-//
-// Deprecated: not support, it will remove v1.0.0
-func (sf *Signature) Decode(token string) (interface{}, error) {
-	return sf.CheckTokenExpire(sf.DecodeToken(token))
-}
-
-// DecodeToken parse jwt token string
-//
-// Deprecated: use DecodeToken instead, it will remove v1.0.0
-func (sf *Signature) DecodeToken(tokenString string) (*jwt.Token, error) {
-	return sf.ParseWithClaims(tokenString, &Claims{Identity: sf.identity})
-}
-
-// CheckTokenExpire check token expire or not, and return identity value
-//
-// Deprecated: not support, it will remove v1.0.0
-func (sf *Signature) CheckTokenExpire(token *jwt.Token, err error) (interface{}, error) {
-	if err != nil {
-		// If we receive an error, and the error is anything other than a single
-		// ValidationErrorExpired, we want to return the error.
-		// If the error is just ValidationErrorExpired, we want to continue, as we can still
-		// refresh the token if it's within the MaxRefresh time.
-		ve, ok := err.(*jwt.ValidationError)
-		if !ok || ve.Errors != jwt.ValidationErrorExpired {
-			return nil, err
-		}
-		return nil, ErrExpiredToken
-	}
-
-	claims, ok := token.Claims.(*Claims)
-	if !ok {
-		return nil, ErrInvalidToken
-	}
-	if claims.VerifyExpiresAt(time.Now().Add(-sf.maxRefresh), true) {
-		return claims.Identity, nil
-	}
-	return nil, ErrExpiredToken
 }

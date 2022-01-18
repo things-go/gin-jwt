@@ -1,11 +1,5 @@
 package jwt
 
-import (
-	"time"
-
-	"github.com/gin-gonic/gin"
-)
-
 // Config auth config
 type Config struct {
 	SignConfig
@@ -41,19 +35,4 @@ func New(c Config) (*Auth, error) {
 		Signature: sign,
 		Lookup:    NewLookup(c.TokenLookup, c.TokenHeaderName),
 	}, nil
-}
-
-// RefreshToken refresh token and check if token is expired
-//
-// Deprecated: not support
-func (sf *Auth) RefreshToken(c *gin.Context) (string, time.Time, error) {
-	token, err := sf.GetToken(c)
-	if err != nil {
-		return "", time.Now(), err
-	}
-	identity, err := sf.Decode(token)
-	if err != nil {
-		return "", time.Now(), err
-	}
-	return sf.Encode(identity)
 }

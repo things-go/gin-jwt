@@ -8,8 +8,9 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 
-	jwt "github.com/things-go/gin-jwt"
+	ginjwt "github.com/things-go/gin-jwt"
 )
 
 const identityKey = "identify"
@@ -25,14 +26,18 @@ type login struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
+type Claims struct {
+	jwt.RegisteredClaims
+	Identity User `json:"identity"`
+}
+
 func main() {
 	// jwt auth
-	auth, err := jwt.New(jwt.Config{
-		SignConfig: jwt.SignConfig{
+	auth, err := ginjwt.New(ginjwt.Config{
+		SignConfig: ginjwt.SignConfig{
 			Key:        []byte("secret key"),
 			Timeout:    time.Hour,
 			MaxRefresh: time.Hour,
-			Identity:   &User{},
 		},
 
 		// Lookup is a string in the form of "<source>:<name>" that is used
@@ -70,7 +75,7 @@ func main() {
 }
 
 type Service struct {
-	auth *jwt.Auth
+	auth *ginjwt.Auth
 }
 
 func (sf *Service) Login(c *gin.Context) {
@@ -85,13 +90,20 @@ func (sf *Service) Login(c *gin.Context) {
 	if (username == "admin" && password == "admin") ||
 		(username == "test" && password == "test") {
 		uid := rand.Int63()
-		t, tm, err := sf.auth.Encode(&User{uid, username})
+
+		expiredAt := time.Now().Add(sf.auth.GetTimeout())
+		t, err := sf.auth.NewWithClaims(Claims{
+			RegisteredClaims: jwt.RegisteredClaims{
+				ExpiresAt: jwt.NewNumericDate(expiredAt),
+			},
+			Identity: User{uid, username},
+		})
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"msg": err.Error()})
 			return
 		}
 		log.Printf("uid: %d, token: %s", uid, t)
-		c.JSON(http.StatusOK, gin.H{"token": t, "tm": tm})
+		c.JSON(http.StatusOK, gin.H{"token": t, "tm": expiredAt})
 		return
 	}
 	c.JSON(http.StatusBadRequest, gin.H{"msg": "账号或密码错"})
@@ -114,13 +126,13 @@ func (sf *Service) CheckAuth(excludePrefixes ...string) gin.HandlerFunc {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 				return
 			}
-			identity, err := sf.auth.Decode(tk)
+			v, err := sf.auth.ParseWithClaims(tk, &Claims{})
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 				return
 			}
-			u := identity.(*User)
-			c.Set(identityKey, u)
+			u := v.Claims.(*Claims)
+			c.Set(identityKey, &u.Identity)
 		}
 		c.Next()
 	}

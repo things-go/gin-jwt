@@ -2,7 +2,9 @@ package jwt
 
 import (
 	"testing"
+	"time"
 
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -14,11 +16,14 @@ type Identity struct {
 
 var key = []byte("secret key")
 
+type Claims struct {
+	jwt.RegisteredClaims
+	Identity Identity `json:"identity"`
+}
+
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
-		SignConfig: SignConfig{
-			Identity: Identity{},
-		},
+		SignConfig: SignConfig{},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrMissingSecretKey, err)
@@ -29,7 +34,6 @@ func TestMissingPrivKey(t *testing.T) {
 		SignConfig: SignConfig{
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "nonexisting",
-			Identity:         Identity{},
 		},
 	})
 	assert.Error(t, err)
@@ -42,7 +46,6 @@ func TestMissingPubKey(t *testing.T) {
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "nonexisting",
-			Identity:         Identity{},
 		},
 	})
 	assert.Error(t, err)
@@ -55,7 +58,6 @@ func TestInvalidPrivKey(t *testing.T) {
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/invalidprivkey.key",
 			PubKeyFile:       "testdata/jwtRS256.key.pub",
-			Identity:         Identity{},
 		},
 	})
 
@@ -69,7 +71,6 @@ func TestInvalidPubKey(t *testing.T) {
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "testdata/invalidpubkey.key",
-			Identity:         Identity{},
 		},
 	})
 
@@ -80,35 +81,39 @@ func TestInvalidPubKey(t *testing.T) {
 func TestAuth(t *testing.T) {
 	auth, err := New(Config{
 		SignConfig: SignConfig{
-			Key: key, Identity: Identity{},
+			Key: key,
 		},
 	})
 	assert.NoError(t, err)
 
 	want := &Identity{1, "username"}
 
-	token, _, err := auth.Encode(want)
+	token, err := auth.NewWithClaims(Claims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(auth.GetTimeout())),
+		},
+		Identity: *want,
+	})
 	require.NoError(t, err)
 
-	v, err := auth.Decode(token)
+	v, err := auth.ParseWithClaims(token, &Claims{})
 	require.NoError(t, err)
 
-	got, ok := v.(*Identity)
+	got, ok := v.Claims.(*Claims)
 	require.True(t, ok)
 
-	require.Equal(t, want, got)
+	require.Equal(t, *want, got.Identity)
 }
 
 func BenchmarkHS(b *testing.B) {
 	rs, _ := New(Config{
 		SignConfig: SignConfig{
-			Key:      []byte("key"),
-			Identity: Identity{},
+			Key: []byte("key"),
 		},
 	})
 
 	for i := 0; i < b.N; i++ {
-		_, _, _ = rs.Encode(Identity{})
+		_, _ = rs.NewWithClaims(Claims{})
 	}
 }
 
@@ -118,12 +123,11 @@ func BenchmarkRS(b *testing.B) {
 			SigningAlgorithm: "RS256",
 			PrivKeyFile:      "testdata/jwtRS256.key",
 			PubKeyFile:       "testdata/jwtRS256.key.pub",
-			Identity:         Identity{},
 		},
 	})
 
 	for i := 0; i < b.N; i++ {
-		_, _, _ = rs.Encode(Identity{})
+		_, _ = rs.NewWithClaims(Claims{})
 	}
 }
 
