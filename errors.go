@@ -13,10 +13,6 @@ var (
 	ErrMissingToken = errors.New("auth token is empty")
 	// ErrInvalidAuthHeader indicates auth header is invalid
 	ErrInvalidAuthHeader = errors.New("auth header is invalid")
-	// ErrInvalidToken indicates token is invalid
-	ErrInvalidToken = errors.New("token is invalid")
-	// ErrExpiredToken indicates JWT token has expired. Can't refresh.
-	ErrExpiredToken = errors.New("token is expired")
 	// ErrInvalidSigningAlgorithm indicates signing algorithm is invalid,
 	// needs to be HS256, HS384, HS512, RS256, RS384 or RS512
 	ErrInvalidSigningAlgorithm = errors.New("invalid signing algorithm")
