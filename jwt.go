@@ -3,7 +3,6 @@ package jwt
 import (
 	"crypto/rsa"
 	"io/ioutil"
-	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
@@ -20,21 +19,10 @@ type SignConfig struct {
 	// Public key file for asymmetric algorithms
 	// Required, RS256, RS384 or RS512.
 	PrivKeyFile, PubKeyFile string
-
-	// Duration that a jwt token is valid.
-	// Optional, Defaults to one hour.
-	Timeout time.Duration
-	// This field allows clients to refresh their token until MaxRefresh has passed.
-	// Note that clients can refresh their token in the last moment of MaxRefresh.
-	// This means that the maximum validity timespan for a token is TokenTime + MaxRefresh.
-	// Optional, defaults to 0 meaning not refreshable.
-	MaxRefresh time.Duration
 }
 
 // Signature provides a Json-Web-Token authentication implementation.
 type Signature struct {
-	timeout       time.Duration
-	maxRefresh    time.Duration
 	signingMethod jwt.SigningMethod
 	encodeKey     interface{}
 	decodeKey     interface{}
@@ -44,14 +32,7 @@ type Signature struct {
 func NewSignature(c SignConfig) (*Signature, error) {
 	var err error
 
-	if c.Timeout == 0 {
-		c.Timeout = time.Hour
-	}
-
-	mw := &Signature{
-		timeout:    c.Timeout,
-		maxRefresh: c.MaxRefresh,
-	}
+	mw := &Signature{}
 
 	usingPublicKeyAlgo := false
 	switch c.SigningAlgorithm {
@@ -104,17 +85,6 @@ func readPublicKey(pubKeyFile string) (*rsa.PublicKey, error) {
 	}
 	return key, nil
 }
-
-// GetTimeout return timeout time.
-// Duration that a jwt token is valid.
-// Optional, Defaults to one hour.
-func (sf *Signature) GetTimeout() time.Duration { return sf.timeout }
-
-// GetMaxRefresh return max refresh time
-// This field allows clients to refresh their token until MaxRefresh has passed.
-// Note that clients can refresh their token in the last moment of MaxRefresh.
-// This means that the maximum validity timespan for a token is TokenTime + MaxRefresh.
-func (sf *Signature) GetMaxRefresh() time.Duration { return sf.maxRefresh }
 
 // NewWithClaims creates a new Token with the claims.
 func (sf *Signature) NewWithClaims(claims jwt.Claims) (string, error) {
