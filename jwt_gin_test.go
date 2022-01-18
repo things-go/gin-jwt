@@ -77,17 +77,6 @@ func TestInvalidPubKey(t *testing.T) {
 	assert.Equal(t, ErrInvalidPubKey, err)
 }
 
-func TestMissIdentity(t *testing.T) {
-	_, err := New(Config{
-		SignConfig: SignConfig{
-			Key: key,
-		},
-	})
-
-	assert.Error(t, err)
-	assert.Equal(t, ErrMissingIdentity, err)
-}
-
 func TestAuth(t *testing.T) {
 	auth, err := New(Config{
 		SignConfig: SignConfig{

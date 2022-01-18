@@ -44,6 +44,8 @@ func New(c Config) (*Auth, error) {
 }
 
 // RefreshToken refresh token and check if token is expired
+//
+// Deprecated: not support
 func (sf *Auth) RefreshToken(c *gin.Context) (string, time.Time, error) {
 	token, err := sf.GetToken(c)
 	if err != nil {

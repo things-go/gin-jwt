@@ -31,7 +31,4 @@ var (
 	ErrInvalidPrivKey = errors.New("private key invalid")
 	// ErrMissingSecretKey indicates Secret key is required
 	ErrMissingSecretKey = errors.New("secret key is required")
-
-	// ErrMissingIdentity indicates Identity is required
-	ErrMissingIdentity = errors.New("identity is required")
 )
