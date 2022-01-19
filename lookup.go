@@ -63,6 +63,7 @@ func (sf *Lookup) GetToken(c *gin.Context) (string, error) {
 		switch lookup.key {
 		case "header":
 			token, err = FromHeader(c, lookup.value, sf.headerName)
+
 		case "query":
 			token, err = FromQuery(c, lookup.value)
 		case "cookie":

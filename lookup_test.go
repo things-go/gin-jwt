@@ -13,6 +13,10 @@ func init() {
 	gin.SetMode(gin.ReleaseMode)
 }
 
+func TestNewLookupIngoreInvalidLookupPair(t *testing.T) {
+	NewLookup("header:Authorization,xxx", "Bearer")
+}
+
 func TestLookupHeader(t *testing.T) {
 	lk := NewLookup("header:Authorization", "Bearer")
 
@@ -62,6 +66,20 @@ func TestLookupHeader(t *testing.T) {
 			token, err := lk1.GetToken(c)
 			require.NoError(t, err)
 			require.Equal(t, "xxxxxx", token)
+		})
+		srv.ServeHTTP(httptest.NewRecorder(), req)
+	})
+	t.Run("from header but invalid value", func(t *testing.T) {
+		lk1 := NewLookup("header:Authorization", "Bearer")
+
+		req := httptest.NewRequest(http.MethodGet, "/get", nil)
+		req.Header.Add("Authorization", "xxxxxx")
+
+		srv := gin.New()
+		srv.GET("/get", func(c *gin.Context) {
+			token, err := lk1.GetToken(c)
+			require.Error(t, err)
+			require.Equal(t, "", token)
 		})
 		srv.ServeHTTP(httptest.NewRecorder(), req)
 	})
@@ -144,6 +162,34 @@ func TestLookupParam(t *testing.T) {
 
 		srv := gin.New()
 		srv.GET("/get/:token", func(c *gin.Context) {
+			token, err := lk.GetToken(c)
+			require.NoError(t, err)
+			require.Equal(t, "xxxxxx", token)
+		})
+		srv.ServeHTTP(httptest.NewRecorder(), req)
+	})
+}
+
+func TestLookupMultiWay(t *testing.T) {
+	lk := NewLookup("header:Authorization,query:token,cookie:token,param:token", "Bearer")
+
+	t.Run("from query", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/get?token=xxxxxx", nil)
+
+		srv := gin.New()
+		srv.GET("/get", func(c *gin.Context) {
+			token, err := lk.GetToken(c)
+			require.NoError(t, err)
+			require.Equal(t, "xxxxxx", token)
+		})
+		srv.ServeHTTP(httptest.NewRecorder(), req)
+	})
+	t.Run("from header", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodGet, "/get", nil)
+		req.Header.Add("Authorization", "Bearer xxxxxx")
+
+		srv := gin.New()
+		srv.GET("/get", func(c *gin.Context) {
 			token, err := lk.GetToken(c)
 			require.NoError(t, err)
 			require.Equal(t, "xxxxxx", token)

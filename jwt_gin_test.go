@@ -23,7 +23,9 @@ type Claims struct {
 
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
-		SignConfig: SignConfig{},
+		SignConfig: SignConfig{
+			SigningAlgorithm: "HS512",
+		},
 	})
 	assert.Error(t, err)
 	assert.Equal(t, ErrMissingSecretKey, err)
