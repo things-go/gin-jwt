@@ -83,25 +83,21 @@ func main() {
 	// jwt auth
 	auth, err := ginjwt.New(ginjwt.Config{
 		SignConfig: ginjwt.SignConfig{
-			Key:        []byte("secret key"),
-			Timeout:    time.Hour,
-			MaxRefresh: time.Hour,
+			Algorithm: "HS256",
+			Key:       []byte("secret key"),
 		},
 
-		// Lookup is a string in the form of "<source>:<name>" that is used
+		// NewLookup new lookup
+		// lookup is a string in the form of "<source>:<name>[:<headerName>]" that is used
 		// to extract token from the request.
-		// Optional. Default value "header:Authorization".
+		// use like "header:<name>[:<headerName>],query:<name>,cookie:<name>,param:<name>"
+		// Optional, Default value "header:Authorization:Bearer".
 		// Possible values:
-		// - "header:<name>"
+		// - "header:<name>:<headerName>", <headerName> is a special string in the header, Possible value is "Bearer"
 		// - "query:<name>"
 		// - "cookie:<name>"
 		// - "param:<name>"
-		TokenLookup: "header: Authorization, query: token, cookie: jwt",
-		// Lookup: "query:token",
-		// Lookup: "cookie:token",
-
-		// TokenHeaderName is a string in the header. Possible value is "Bearer"
-		TokenHeaderName: "Bearer",
+		TokenLookup: "header:Authorization:Bearer,query:token,cookie:jwt",
 	})
 	if err != nil {
 		log.Fatal("JWT Error:" + err.Error())
@@ -139,7 +135,7 @@ func (sf *Service) Login(c *gin.Context) {
 		(username == "test" && password == "test") {
 		uid := rand.Int63()
 
-		expiredAt := time.Now().Add(sf.auth.GetTimeout())
+		expiredAt := time.Now().Add(time.Hour)
 		t, err := sf.auth.NewWithClaims(Claims{
 			RegisteredClaims: jwt.RegisteredClaims{
 				ExpiresAt: jwt.NewNumericDate(expiredAt),

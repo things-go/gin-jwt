@@ -24,7 +24,7 @@ type Claims struct {
 func TestMissingKey(t *testing.T) {
 	_, err := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "HS512",
+			Algorithm: "HS512",
 		},
 	})
 	assert.Error(t, err)
@@ -34,8 +34,8 @@ func TestMissingKey(t *testing.T) {
 func TestMissingPrivKey(t *testing.T) {
 	_, err := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "RS256",
-			PrivKeyFile:      "nonexisting",
+			Algorithm:   "RS256",
+			PrivKeyFile: "nonexisting",
 		},
 	})
 	assert.Error(t, err)
@@ -45,9 +45,9 @@ func TestMissingPrivKey(t *testing.T) {
 func TestMissingPubKey(t *testing.T) {
 	_, err := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "RS256",
-			PrivKeyFile:      "testdata/jwtRS256.key",
-			PubKeyFile:       "nonexisting",
+			Algorithm:   "RS256",
+			PrivKeyFile: "testdata/jwtRS256.key",
+			PubKeyFile:  "nonexisting",
 		},
 	})
 	assert.Error(t, err)
@@ -57,9 +57,9 @@ func TestMissingPubKey(t *testing.T) {
 func TestInvalidPrivKey(t *testing.T) {
 	_, err := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "RS256",
-			PrivKeyFile:      "testdata/invalidprivkey.key",
-			PubKeyFile:       "testdata/jwtRS256.key.pub",
+			Algorithm:   "RS256",
+			PrivKeyFile: "testdata/invalidprivkey.key",
+			PubKeyFile:  "testdata/jwtRS256.key.pub",
 		},
 	})
 
@@ -70,9 +70,9 @@ func TestInvalidPrivKey(t *testing.T) {
 func TestInvalidPubKey(t *testing.T) {
 	_, err := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "RS256",
-			PrivKeyFile:      "testdata/jwtRS256.key",
-			PubKeyFile:       "testdata/invalidpubkey.key",
+			Algorithm:   "RS256",
+			PrivKeyFile: "testdata/jwtRS256.key",
+			PubKeyFile:  "testdata/invalidpubkey.key",
 		},
 	})
 
@@ -123,9 +123,9 @@ func BenchmarkHS(b *testing.B) {
 func BenchmarkRS(b *testing.B) {
 	rs, _ := New(Config{
 		SignConfig: SignConfig{
-			SigningAlgorithm: "RS256",
-			PrivKeyFile:      "testdata/jwtRS256.key",
-			PubKeyFile:       "testdata/jwtRS256.key.pub",
+			Algorithm:   "RS256",
+			PrivKeyFile: "testdata/jwtRS256.key",
+			PubKeyFile:  "testdata/jwtRS256.key.pub",
 		},
 	})
 

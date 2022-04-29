@@ -11,7 +11,7 @@ import (
 type SignConfig struct {
 	// 支持签名算法: HS256, HS384, HS512, RS256, RS384 or RS512
 	// Optional, Default HS256.
-	SigningAlgorithm string
+	Algorithm string
 	// Secret key used for signing.
 	// Required, HS256, HS384, HS512.
 	Key []byte
@@ -35,7 +35,7 @@ func NewSignature(c SignConfig) (*Signature, error) {
 	mw := &Signature{}
 
 	usingPublicKeyAlgo := false
-	switch c.SigningAlgorithm {
+	switch c.Algorithm {
 	case "RS256", "RS512", "RS384":
 		usingPublicKeyAlgo = true
 		mw.encodeKey, err = readPrivateKey(c.PrivKeyFile)
@@ -48,9 +48,9 @@ func NewSignature(c SignConfig) (*Signature, error) {
 		}
 	case "HS256", "HS512", "HS384":
 	default:
-		c.SigningAlgorithm = "HS256"
+		c.Algorithm = "HS256"
 	}
-	mw.signingMethod = jwt.GetSigningMethod(c.SigningAlgorithm)
+	mw.signingMethod = jwt.GetSigningMethod(c.Algorithm)
 
 	if !usingPublicKeyAlgo {
 		if c.Key == nil {

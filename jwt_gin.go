@@ -4,17 +4,16 @@ package jwt
 type Config struct {
 	SignConfig
 
-	// TokenLookup is a string in the form of "<source>:<name>" that is used
+	// TokenLookup is a string in the form of "<source>:<name>[:<headerName>]" that is used
 	// to extract token from the request.
-	// Optional, Default value "header:Authorization".
+	// use like "header:<name>[:<headerName>],query:<name>,cookie:<name>,param:<name>"
+	// Optional, Default value "header:Authorization:Bearer".
 	// Possible values:
-	// - "header:<name>"
+	// - "header:<name>:<headerName>", <headerName> is a special string in the header, Possible value is "Bearer"
 	// - "query:<name>"
 	// - "cookie:<name>"
+	// - "param:<name>"
 	TokenLookup string
-	// TokenHeaderName is a string in the header.
-	// Possible value is "Bearer"
-	TokenHeaderName string
 }
 
 // Auth provides a Json-Web-Token authentication implementation.
@@ -33,6 +32,6 @@ func New(c Config) (*Auth, error) {
 	}
 	return &Auth{
 		Signature: sign,
-		Lookup:    NewLookup(c.TokenLookup, c.TokenHeaderName),
+		Lookup:    NewLookup(c.TokenLookup),
 	}, nil
 }

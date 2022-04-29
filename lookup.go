@@ -10,45 +10,48 @@ import (
 type pair struct {
 	key   string
 	value string
+	// headerName is a string in the header.
+	// Possible value is "Bearer"
+	headerName string
 }
 
 type Lookup struct {
-	// headerName is a string in the header.
-	// Default value is "Bearer"
-	headerName string
 	// lookup pair slice from lookup parse
 	lookups []pair
 }
 
 // NewLookup new lookup
-// lookup is a string in the form of "<source>:<name>" that is used
+// lookup is a string in the form of "<source>:<name>[:<headerName>]" that is used
 // to extract token from the request.
-// use like "header:<name>,query:<name>,cookie:<name>"
-// Optional, Default value "header:Authorization".
+// use like "header:<name>[:<headerName>],query:<name>,cookie:<name>,param:<name>"
+// Optional, Default value "header:Authorization:Bearer".
 // Possible values:
-// - "header:<name>"
+// - "header:<name>:<headerName>", <headerName> is a special string in the header, Possible value is "Bearer"
 // - "query:<name>"
 // - "cookie:<name>"
-// headerName is a string in the header.
-// Possible value is "Bearer"
-func NewLookup(lookup, headerName string) *Lookup {
+// - "param:<name>"
+func NewLookup(lookup string) *Lookup {
 	if lookup == "" {
-		lookup = "header:Authorization"
+		lookup = "header:Authorization:Bearer"
 	}
-	headerName = strings.TrimSpace(headerName)
 	methods := strings.Split(lookup, ",")
 	lookups := make([]pair, 0, len(methods))
 	for _, method := range methods {
 		parts := strings.Split(strings.TrimSpace(method), ":")
-		if len(parts) != 2 {
+		headerName := ""
+		if !(len(parts) == 2 || len(parts) == 3) {
 			continue
 		}
-		lookups = append(lookups, pair{strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])})
+		if len(parts) == 3 && parts[0] == "header" {
+			headerName = strings.TrimSpace(parts[2])
+		}
+		lookups = append(lookups, pair{
+			strings.TrimSpace(parts[0]),
+			strings.TrimSpace(parts[1]),
+			headerName,
+		})
 	}
-	return &Lookup{
-		headerName,
-		lookups,
-	}
+	return &Lookup{lookups}
 }
 
 // GetToken 获取token, 从Request中获取,由 Lookup 定义
@@ -62,8 +65,7 @@ func (sf *Lookup) GetToken(c *gin.Context) (string, error) {
 		}
 		switch lookup.key {
 		case "header":
-			token, err = FromHeader(c, lookup.value, sf.headerName)
-
+			token, err = FromHeader(c, lookup.value, lookup.headerName)
 		case "query":
 			token, err = FromQuery(c, lookup.value)
 		case "cookie":

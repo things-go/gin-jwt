@@ -14,11 +14,11 @@ func init() {
 }
 
 func TestNewLookupIngoreInvalidLookupPair(t *testing.T) {
-	NewLookup("header:Authorization,xxx", "Bearer")
+	NewLookup("header:Authorization:Bearer,xxx")
 }
 
 func TestLookupHeader(t *testing.T) {
-	lk := NewLookup("header:Authorization", "Bearer")
+	lk := NewLookup("header:Authorization:Bearer")
 
 	t.Run("miss header", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/get", nil)
@@ -56,7 +56,7 @@ func TestLookupHeader(t *testing.T) {
 		srv.ServeHTTP(httptest.NewRecorder(), req)
 	})
 	t.Run("from header without Bearer", func(t *testing.T) {
-		lk1 := NewLookup("header:Authorization", "")
+		lk1 := NewLookup("header:Authorization")
 
 		req := httptest.NewRequest(http.MethodGet, "/get", nil)
 		req.Header.Add("Authorization", "xxxxxx")
@@ -70,7 +70,7 @@ func TestLookupHeader(t *testing.T) {
 		srv.ServeHTTP(httptest.NewRecorder(), req)
 	})
 	t.Run("from header but invalid value", func(t *testing.T) {
-		lk1 := NewLookup("header:Authorization", "Bearer")
+		lk1 := NewLookup("header:Authorization:Bearer")
 
 		req := httptest.NewRequest(http.MethodGet, "/get", nil)
 		req.Header.Add("Authorization", "xxxxxx")
@@ -86,7 +86,7 @@ func TestLookupHeader(t *testing.T) {
 }
 
 func TestLookupQuery(t *testing.T) {
-	lk := NewLookup("query:token", "")
+	lk := NewLookup("query:token")
 
 	t.Run("miss query", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/get", nil)
@@ -113,7 +113,7 @@ func TestLookupQuery(t *testing.T) {
 }
 
 func TestLookupCookie(t *testing.T) {
-	lk := NewLookup("cookie:token", "")
+	lk := NewLookup("cookie:token")
 
 	t.Run("miss cookie", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/get", nil)
@@ -144,7 +144,7 @@ func TestLookupCookie(t *testing.T) {
 }
 
 func TestLookupParam(t *testing.T) {
-	lk := NewLookup("param:token", "")
+	lk := NewLookup("param:token")
 
 	t.Run("miss param", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/get/", nil)
@@ -171,7 +171,7 @@ func TestLookupParam(t *testing.T) {
 }
 
 func TestLookupMultiWay(t *testing.T) {
-	lk := NewLookup("header:Authorization,query:token,cookie:token,param:token", "Bearer")
+	lk := NewLookup("header:Authorization:Bearer,query:token,cookie:token,param:token")
 
 	t.Run("from query", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/get?token=xxxxxx", nil)
