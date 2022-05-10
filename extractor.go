@@ -30,7 +30,7 @@ type ArgumentExtractor string
 
 func (e ArgumentExtractor) ExtractToken(r *http.Request) (string, error) {
 	// Make sure form is parsed
-	r.ParseMultipartForm(10e6)
+	_ = r.ParseMultipartForm(10e6)
 
 	tk := strings.TrimSpace(r.Form.Get(string(e)))
 	if tk != "" {
@@ -66,7 +66,7 @@ func stripHeadValuePrefixFromTokenString(prefix string) func(string) (string, er
 			return tok, nil
 		}
 		// Should be a bearer token
-		if len(tok) > l && strings.ToUpper(tok[:l]) == strings.ToUpper(prefix) {
+		if len(tok) > l && strings.EqualFold(tok[:l], prefix) {
 			if tok = strings.TrimSpace(tok[l+1:]); tok != "" {
 				return tok, nil
 			}
