@@ -1,83 +1,57 @@
 package jwt
 
 import (
+	"net/http"
 	"strings"
 
-	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4/request"
 )
 
-// pair lookup token pair
-type pair struct {
-	key   string
-	value string
-	// headerName is a string in the header.
-	// Possible value is "Bearer"
-	headerName string
-}
-
+// Lookup is a tool that looks up the token
 type Lookup struct {
-	// lookup pair slice from lookup parse
-	lookups []pair
+	extractors request.MultiExtractor
 }
 
 // NewLookup new lookup
-// lookup is a string in the form of "<source>:<name>[:<headerName>]" that is used
+// lookup is a string in the form of "<source>:<name>[:<prefix>]" that is used
 // to extract token from the request.
-// use like "header:<name>[:<headerName>],query:<name>,cookie:<name>,param:<name>"
+// use like "header:<name>[:<prefix>],query:<name>,cookie:<name>,param:<name>"
 // Optional, Default value "header:Authorization:Bearer".
 // Possible values:
-// - "header:<name>:<headerName>", <headerName> is a special string in the header, Possible value is "Bearer"
+// - "header:<name>:<prefix>", <prefix> is a special string in the header, Possible value is "Bearer"
 // - "query:<name>"
 // - "cookie:<name>"
-// - "param:<name>"
 func NewLookup(lookup string) *Lookup {
 	if lookup == "" {
 		lookup = "header:Authorization:Bearer"
 	}
 	methods := strings.Split(lookup, ",")
-	lookups := make([]pair, 0, len(methods))
+	lookups := make(request.MultiExtractor, 0, len(methods))
 	for _, method := range methods {
 		parts := strings.Split(strings.TrimSpace(method), ":")
-		headerName := ""
 		if !(len(parts) == 2 || len(parts) == 3) {
 			continue
 		}
-		if len(parts) == 3 && parts[0] == "header" {
-			headerName = strings.TrimSpace(parts[2])
+		switch parts[0] {
+		case "header":
+			prefix := ""
+			if len(parts) == 3 {
+				prefix = strings.TrimSpace(parts[2])
+			}
+			lookups = append(lookups, HeaderExtractor{strings.TrimSpace(parts[1]), prefix})
+		case "query":
+			lookups = append(lookups, ArgumentExtractor(parts[1]))
+		case "cookie":
+			lookups = append(lookups, CookieExtractor(parts[1]))
 		}
-		lookups = append(lookups, pair{
-			strings.TrimSpace(parts[0]),
-			strings.TrimSpace(parts[1]),
-			headerName,
-		})
 	}
 	return &Lookup{lookups}
 }
 
-// GetToken 获取token, 从Request中获取,由 Lookup 定义
-func (sf *Lookup) GetToken(c *gin.Context) (string, error) {
-	var token string
-	var err error
-
-	for _, lookup := range sf.lookups {
-		if len(token) > 0 {
-			break
-		}
-		switch lookup.key {
-		case "header":
-			token, err = FromHeader(c, lookup.value, lookup.headerName)
-		case "query":
-			token, err = FromQuery(c, lookup.value)
-		case "cookie":
-			token, err = FromCookie(c, lookup.value)
-		case "param":
-			token, err = FromParam(c, lookup.value)
-		}
-	}
-	if err != nil {
-		return "", err
-	}
-	if len(token) == 0 {
+// Get get token from header, defined in NewLookup
+func (sf *Lookup) Get(r *http.Request) (string, error) {
+	token, err := sf.extractors.ExtractToken(r)
+	if err != nil || token == "" {
 		return "", ErrMissingToken
 	}
 	return token, nil
@@ -85,49 +59,19 @@ func (sf *Lookup) GetToken(c *gin.Context) (string, error) {
 
 // FromHeader get token from header
 // key is header key, like "Authorization"
-// headerName is a string in the header, like "Bearer", if it is empty, it will return value.
-func FromHeader(c *gin.Context, key, headerName string) (string, error) {
-	authHeader := c.Request.Header.Get(key)
-	if authHeader == "" {
-		return "", ErrMissingToken
-	}
-	if headerName == "" {
-		return strings.TrimSpace(authHeader), nil
-	}
-
-	parts := strings.SplitN(authHeader, " ", 2)
-	if !(len(parts) == 2 && parts[0] == headerName) {
-		return "", ErrInvalidAuthHeader
-	}
-	return strings.TrimSpace(parts[1]), nil
+// prefix is a string in the header, like "Bearer", if it is empty, it will return value.
+func FromHeader(r *http.Request, key, prefix string) (string, error) {
+	return HeaderExtractor{key, prefix}.ExtractToken(r)
 }
 
 // FromQuery get token from query
 // key is query key
-func FromQuery(c *gin.Context, key string) (string, error) {
-	token := c.Query(key)
-	if token == "" {
-		return "", ErrMissingToken
-	}
-	return strings.TrimSpace(token), nil
+func FromQuery(r *http.Request, key string) (string, error) {
+	return ArgumentExtractor(key).ExtractToken(r)
 }
 
 // FromCookie get token from Cookie
 // key is cookie key
-func FromCookie(c *gin.Context, key string) (string, error) {
-	cookie, _ := c.Cookie(key)
-	if cookie == "" {
-		return "", ErrMissingToken
-	}
-	return strings.TrimSpace(cookie), nil
-}
-
-// FromParam get token from param
-// key is param key
-func FromParam(c *gin.Context, key string) (string, error) {
-	token := c.Param(key)
-	if token == "" {
-		return "", ErrMissingToken
-	}
-	return strings.TrimSpace(token), nil
+func FromCookie(r *http.Request, key string) (string, error) {
+	return CookieExtractor(key).ExtractToken(r)
 }

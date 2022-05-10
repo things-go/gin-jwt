@@ -2,6 +2,8 @@ package jwt
 
 import (
 	"errors"
+
+	"github.com/golang-jwt/jwt/v4/request"
 )
 
 var (
@@ -10,7 +12,7 @@ var (
 	// if authing with URL Query, the query token variable is empty
 	// if authing with a cookie, the token cookie is empty
 	// if authing with parameter in path, the parameter in path is empty
-	ErrMissingToken = errors.New("auth token is empty")
+	ErrMissingToken = request.ErrNoTokenInRequest
 	// ErrInvalidAuthHeader indicates auth header is invalid
 	ErrInvalidAuthHeader = errors.New("auth header is invalid")
 	// ErrInvalidSigningAlgorithm indicates signing algorithm is invalid,

@@ -117,7 +117,7 @@ func checkPrefix(s string, prefixes ...string) bool {
 func (sf *Service) CheckAuth(excludePrefixes ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if !checkPrefix(c.Request.URL.Path, excludePrefixes...) {
-			tk, err := sf.auth.GetToken(c)
+			tk, err := sf.auth.Get(c.Request)
 			if err != nil {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 				return

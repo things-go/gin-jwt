@@ -169,7 +169,7 @@ func BenchmarkRS(b *testing.B) {
 // }
 //
 // func (sf *server) CheckAuth(c *gin.Context) {
-// 	tk, err := sf.auth.GetToken(c)
+// 	tk, err := sf.auth.Get(c)
 // 	if err != nil {
 // 		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"msg": err.Error()})
 // 		return
