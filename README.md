@@ -88,15 +88,14 @@ func main() {
 		},
 
 		// NewLookup new lookup
-		// lookup is a string in the form of "<source>:<name>[:<headerName>]" that is used
+		// lookup is a string in the form of "<source>:<name>[:<prefix>]" that is used
 		// to extract token from the request.
-		// use like "header:<name>[:<headerName>],query:<name>,cookie:<name>,param:<name>"
+		// use like "header:<name>[:<prefix>],query:<name>,cookie:<name>,param:<name>"
 		// Optional, Default value "header:Authorization:Bearer".
 		// Possible values:
-		// - "header:<name>:<headerName>", <headerName> is a special string in the header, Possible value is "Bearer"
+		// - "header:<name>:<prefix>", <prefix> is a special string in the header, Possible value is "Bearer"
 		// - "query:<name>"
 		// - "cookie:<name>"
-		// - "param:<name>"
 		TokenLookup: "header:Authorization:Bearer,query:token,cookie:jwt",
 	})
 	if err != nil {
